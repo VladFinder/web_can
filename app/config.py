@@ -40,6 +40,12 @@ TABLES = {
     },
 }
 
+# Base folder for JSON-экспорт отправок
+EXPORT_DIR = os.getenv(
+    "WEB_CAN_EXPORT_DIR",
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports"),
+)
+
 
 def ensure_submission_table_sql(table_name: str) -> str:
     return f"""

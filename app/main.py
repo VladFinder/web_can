@@ -6,7 +6,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .db import db, get_makes, get_models, get_parameters, get_vehicles, insert_submission, get_generations, parameter_exists_in_generation, get_parameter_by_name
-from .config import DB_PATH
+from .config import DB_PATH, EXPORT_DIR
+import os
+import re
+import json
+from datetime import datetime
 
 
 app = FastAPI(title="Web CAN Submission App")
@@ -139,7 +143,57 @@ def api_submit(payload: dict) -> JSONResponse:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Insert failed: {e}")
 
-    return JSONResponse({"id": new_id, "status": "ok"}, status_code=201)
+    # Save JSON snapshot to filesystem
+    try:
+        now = datetime.now()
+        y = f"{now.year:04d}"
+        m = f"{now.month:02d}"
+        d = f"{now.day:02d}"
+        base_dir = os.path.join(EXPORT_DIR, y, m, d)
+        os.makedirs(base_dir, exist_ok=True)
+
+        # Next sequential index in the daily folder
+        existing = [f for f in os.listdir(base_dir) if f.lower().endswith('.json')]
+        def parse_idx(name: str) -> int:
+            try:
+                return int(re.match(r"^(\d+)_", name).group(1))
+            except Exception:
+                return 0
+        next_idx = (max([parse_idx(n) for n in existing] + [0]) + 1)
+        idx_str = f"{next_idx:03d}"
+
+        can_id_safe = re.sub(r"[^0-9A-Za-zx]+", "-", str(payload["can_id"]))
+        filename = f"{idx_str}_{can_id_safe}.json"
+        out_path = os.path.join(base_dir, filename)
+
+        snapshot = {
+            "db_submission_id": new_id,
+            "timestamp": now.isoformat(),
+            "make": payload.get("make"),
+            "model": payload.get("model"),
+            "generation_label": payload.get("generation_label"),
+            "generation_id": gen_id,
+            "parameter_id": param_id,
+            "parameter_name": param_name if param_id is None else None,
+            "can_id": str(payload["can_id"]).strip(),
+            "formula": formula,
+            "endian": endian,
+            "notes": payload.get("notes"),
+            "selected_bytes": bytes_sel,
+            "selected_bits": bits_sel,
+        }
+        with open(out_path, 'w', encoding='utf-8') as f:
+            json.dump(snapshot, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        # Do not fail submission if file save fails; just report path in response
+        return JSONResponse({
+            "id": new_id,
+            "status": "ok",
+            "file_saved": False,
+            "error": str(e),
+        }, status_code=201)
+
+    return JSONResponse({"id": new_id, "status": "ok", "file_saved": True}, status_code=201)
 
 
 @app.get("/api/health")

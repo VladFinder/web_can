@@ -234,6 +234,12 @@ els.form.addEventListener('submit', async (e) => {
 
   try {
     const vehicleId = currentVehicleId();
+    const makeName = els.make ? (els.make.value || null) : null;
+    const modelName = els.model ? (els.model.value || null) : null;
+    let generationLabel = null;
+    if (els.generation && els.generation.selectedOptions && els.generation.selectedOptions.length) {
+      generationLabel = els.generation.selectedOptions[0].textContent;
+    }
     const paramName = els.param.value.trim();
     const { id: parameterId, isCustom } = await resolveParameterIdByName(paramName);
     const customName = isCustom ? (els.paramCustomInput.value.trim() || (paramName === 'Другое (ввести вручную)' ? '' : paramName)) : null;
@@ -247,6 +253,9 @@ els.form.addEventListener('submit', async (e) => {
 
     const payload = {
       vehicle_id: vehicleId,
+      make: makeName,
+      model: modelName,
+      generation_label: generationLabel,
       parameter_id: parameterId,
       parameter_name: customName || undefined,
       can_id: canId,
