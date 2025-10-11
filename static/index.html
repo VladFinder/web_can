@@ -40,22 +40,18 @@
           </div>
         </div>
 
-        <div class="params-layout">
-          <section class="params">
-            <div class="params-head">
-              <h2>Параметры</h2>
-              <button type="button" id="add-param">+ Добавить параметр</button>
-            </div>
-            <div id="params-container"></div>
-            <datalist id="param-list"></datalist>
-          </section>
-
-          <aside class="sidebar">
-            <h2>Параметры в БД</h2>
-            <div id="existing-info" class="muted">Выберите поколение, чтобы увидеть список.</div>
-            <ul id="existing-params" class="list"></ul>
-          </aside>
+        <div class="row">
+          <button type="button" id="open-existing">Показать параметры в БД</button>
         </div>
+
+        <section class="params">
+          <div class="params-head">
+            <h2>Параметры</h2>
+            <button type="button" id="add-param">+ Добавить параметр</button>
+          </div>
+          <div id="params-container"></div>
+          <datalist id="param-list"></datalist>
+        </section>
                
         <div class="row">
           <label for="notes">Примечание</label>
@@ -74,6 +70,16 @@
         <pre id="db-check" class="muted">Проверка...</pre>
       </section>
     </main>
+
+    <div id="drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <h2>Параметры в БД</h2>
+        <button type="button" id="close-drawer" aria-label="Закрыть">×</button>
+      </div>
+      <div id="existing-info" class="muted">Выберите поколение, чтобы увидеть список.</div>
+      <ul id="existing-params" class="list"></ul>
+    </div>
+    <div id="backdrop" class="backdrop"></div>
 
     <script src="/static/app.js"></script>
   </body>

@@ -23,6 +23,10 @@ const els = {
   paramList: document.getElementById('param-list'),
   existingList: document.getElementById('existing-params'),
   existingInfo: document.getElementById('existing-info'),
+  openExistingBtn: document.getElementById('open-existing'),
+  drawer: document.getElementById('drawer'),
+  backdrop: document.getElementById('backdrop'),
+  closeDrawerBtn: document.getElementById('close-drawer'),
 };
 
 // In-memory parameter cache: name -> id
@@ -168,7 +172,10 @@ if (els.generation) {
     const isCustom = els.generation.value === '__custom__';
     els.genCustomWrap.style.display = isCustom ? '' : 'none';
     const gid = currentVehicleId();
-    if (gid) loadExistingParams(gid); else { if (els.existingList) els.existingList.innerHTML = ''; if (els.existingInfo) els.existingInfo.textContent = 'Кастомное ТС или поколение не выбрано.'; }
+    // If drawer is open, refresh the list
+    if (els.drawer && els.drawer.classList.contains('open')) {
+      if (gid) loadExistingParams(gid); else { if (els.existingList) els.existingList.innerHTML = ''; if (els.existingInfo) els.existingInfo.textContent = 'Кастомное ТС или поколение не выбрано.'; }
+    }
   });
 }
 
@@ -365,6 +372,23 @@ function makeParamItem(node) {
 if (els.addParamBtn) {
   els.addParamBtn.addEventListener('click', addParamItem);
 }
+
+// Drawer controls
+function openDrawer(){
+  if (!els.drawer) return;
+  els.drawer.classList.add('open');
+  if (els.backdrop) els.backdrop.classList.add('show');
+  const gid = currentVehicleId();
+  if (gid) loadExistingParams(gid); else { if (els.existingList) els.existingList.innerHTML=''; if (els.existingInfo) els.existingInfo.textContent = 'Кастомное ТС или поколение не выбрано.'; }
+}
+function closeDrawer(){
+  if (!els.drawer) return;
+  els.drawer.classList.remove('open');
+  if (els.backdrop) els.backdrop.classList.remove('show');
+}
+if (els.openExistingBtn) els.openExistingBtn.addEventListener('click', openDrawer);
+if (els.closeDrawerBtn) els.closeDrawerBtn.addEventListener('click', closeDrawer);
+if (els.backdrop) els.backdrop.addEventListener('click', closeDrawer);
 
 async function loadExistingParams(generationId){
   try{
