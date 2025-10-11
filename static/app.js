@@ -14,8 +14,8 @@ const els = {
   paramCustomContainer: document.getElementById('param-custom'),
   paramCustomInput: document.getElementById('param_name'),
   can_id: document.getElementById('can_id'),
-  multiplier: document.getElementById('multiplier'),
-  offset: document.getElementById('offset'),
+  formula: document.getElementById('formula'),
+  endian: document.getElementById('endian'),
   notes: document.getElementById('notes'),
   form: document.getElementById('submit-form'),
   status: document.getElementById('status'),
@@ -242,14 +242,16 @@ els.form.addEventListener('submit', async (e) => {
     if (!parameterId && !customName) throw new Error('Параметр не найден. Укажите своё название.');
     const canId = els.can_id.value.trim();
     if (!canId) throw new Error('Укажите CAN ID.');
+    const endian = els.endian.value;
+    if (!endian) throw new Error('Выберите направление чтения (endianness).');
 
     const payload = {
       vehicle_id: vehicleId,
       parameter_id: parameterId,
       parameter_name: customName || undefined,
       can_id: canId,
-      multiplier: els.multiplier.value !== '' ? parseFloat(els.multiplier.value) : null,
-      offset: els.offset.value !== '' ? parseFloat(els.offset.value) : null,
+      formula: els.formula.value || null,
+      endian,
       notes: els.notes.value || null,
       selected_bytes: Array.from(selectedBytes).sort((a,b)=>a-b),
       selected_bits: Array.from(selectedBits).sort((a,b)=>a-b),

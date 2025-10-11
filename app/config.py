@@ -51,8 +51,8 @@ def ensure_submission_table_sql(table_name: str) -> str:
         byte_indices TEXT,
         bit_indices TEXT,
         can_id TEXT NOT NULL,
-        multiplier REAL,
-        offset REAL,
+        formula TEXT,
+        endian TEXT,
         notes TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );

@@ -37,10 +37,11 @@ class DB:
             # Migration: ensure `parameter_name` exists and `parameter_id` is nullable
             info = con.execute(f"PRAGMA table_info({table})").fetchall()
             cols = {row[1]: row for row in info}  # name -> row
-            has_param_name = "parameter_name" in cols
+            required_cols = {"parameter_name", "byte_indices", "bit_indices", "formula", "endian"}
+            missing_required = any(c not in cols for c in required_cols)
             param_id_notnull = bool(cols.get("parameter_id", (None, None, None, 0))[3]) if cols.get("parameter_id") else False
 
-            if (not has_param_name) or param_id_notnull:
+            if missing_required or param_id_notnull:
                 con.execute("BEGIN TRANSACTION")
                 con.execute(
                     f"""
@@ -52,8 +53,8 @@ class DB:
                         byte_indices TEXT,
                         bit_indices TEXT,
                         can_id TEXT NOT NULL,
-                        multiplier REAL,
-                        offset REAL,
+                        formula TEXT,
+                        endian TEXT,
                         notes TEXT,
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP
                     );
@@ -61,7 +62,7 @@ class DB:
                 )
                 # Copy data; parameter_name will be NULL
                 existing_cols = [c for c in [
-                    "id","vehicle_id","parameter_id","parameter_name","byte_indices","bit_indices","can_id","multiplier","offset","notes","created_at"
+                    "id","vehicle_id","parameter_id","parameter_name","byte_indices","bit_indices","can_id","formula","endian","notes","created_at"
                 ] if c in cols]
                 col_list = ",".join(existing_cols)
                 con.execute(
@@ -182,14 +183,14 @@ def parameter_exists_in_generation(generation_id: int, parameter_id: int) -> boo
     return len(rows) > 0
 
 
-def insert_submission(vehicle_id: int, parameter_id: Optional[int], parameter_name: Optional[str], can_id: str, multiplier: Optional[float], offset: Optional[float], notes: Optional[str], byte_indices: Optional[List[int]] = None, bit_indices: Optional[List[int]] = None) -> int:
+def insert_submission(vehicle_id: int, parameter_id: Optional[int], parameter_name: Optional[str], can_id: str, formula: Optional[str], endian: Optional[str], notes: Optional[str], byte_indices: Optional[List[int]] = None, bit_indices: Optional[List[int]] = None) -> int:
     st = TABLES["submissions"]["table"]
     sql = f"""
-        INSERT INTO {st} (vehicle_id, parameter_id, parameter_name, can_id, multiplier, offset, notes, byte_indices, bit_indices)
+        INSERT INTO {st} (vehicle_id, parameter_id, parameter_name, can_id, formula, endian, notes, byte_indices, bit_indices)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     import json
     return db.execute(sql, (
-        vehicle_id, parameter_id, parameter_name, can_id, multiplier, offset, notes,
+        vehicle_id, parameter_id, parameter_name, can_id, formula, endian, notes,
         json.dumps(byte_indices or []), json.dumps(bit_indices or []),
     ))

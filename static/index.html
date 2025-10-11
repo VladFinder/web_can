@@ -50,15 +50,19 @@
           <div class="hint">Нажмите на байт для выбора всех бит. Повторное нажатие снимает выделение. Нажмите на отдельные биты для частичного выбора байта.</div>
         </div>
 
-        <div class="row two">
-          <div>
-            <label for="multiplier">Множитель</label>
-            <input id="multiplier" type="number" step="0.001" placeholder="1.0" />
-          </div>
-          <div>
-            <label for="offset">Смещение</label>
-            <input id="offset" type="number" step="0.001" placeholder="0.0" />
-          </div>
+        <div class="row">
+          <label for="formula">Формула</label>
+          <input id="formula" placeholder="например: (value * 0.1) - 40" />
+        </div>
+
+        <div class="row">
+          <label for="endian">Направление чтения</label>
+          <select id="endian" required>
+            <option value="" disabled selected>— выберите endianness —</option>
+            <option value="little">Little-endian</option>
+            <option value="big">Big-endian</option>
+          </select>
+          <div class="hint">Little-endian — младший байт/бит идёт первым; Big-endian — старший байт/бит идёт первым.</div>
         </div>
 
         <div class="row">

@@ -115,13 +115,23 @@ def api_submit(payload: dict) -> JSONResponse:
         bytes_sel = parse_int_list(payload.get("selected_bytes"))
         bits_sel = parse_int_list(payload.get("selected_bits"))
 
+        # Endianness and formula
+        endian = payload.get("endian")
+        if endian is not None:
+            endian = str(endian).lower().strip()
+            if endian not in ("little", "big"):
+                raise HTTPException(status_code=400, detail="Неверное значение 'endian'. Допустимо: little или big.")
+        else:
+            raise HTTPException(status_code=400, detail="Укажите направление чтения: little-endian или big-endian.")
+        formula = str(payload.get("formula")).strip() if payload.get("formula") else None
+
         new_id = insert_submission(
             gen_id,
             param_id,
             param_name if param_id is None else None,
             str(payload["can_id"]).strip(),
-            float(payload["multiplier"]) if payload.get("multiplier") not in (None, "") else None,
-            float(payload["offset"]) if payload.get("offset") not in (None, "") else None,
+            formula,
+            endian,
             str(payload.get("notes")).strip() if payload.get("notes") not in (None,) else None,
             byte_indices=bytes_sel,
             bit_indices=bits_sel,
