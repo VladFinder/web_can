@@ -81,69 +81,74 @@ def api_parameters(query: Optional[str] = None, limit: int = 200) -> JSONRespons
 @app.post("/api/submissions")
 def api_submit(payload: dict) -> JSONResponse:
     require_db()
-    required = ["vehicle_id", "can_id"]
-    missing = [k for k in required if k not in payload or payload[k] in (None, "")]
-    if missing:
-        raise HTTPException(status_code=400, detail=f"Missing required fields: {', '.join(missing)}")
+    def parse_int_list(val):
+        if isinstance(val, list):
+            out = []
+            for x in val:
+                try:
+                    out.append(int(x))
+                except Exception:
+                    continue
+            return out
+        return []
 
-    try:
-        gen_id = int(payload["vehicle_id"])  # here vehicle_id represents generationId
-        param_id = int(payload["parameter_id"]) if payload.get("parameter_id") not in (None, "") else None
-        param_name = str(payload.get("parameter_name")).strip() if payload.get("parameter_name") else None
-
+    def process_one(item: dict, gen_id_opt: Optional[int]) -> int:
+        param_id = int(item["parameter_id"]) if item.get("parameter_id") not in (None, "") else None
+        param_name = str(item.get("parameter_name")).strip() if item.get("parameter_name") else None
         if param_id is None and not param_name:
             raise HTTPException(status_code=400, detail="Нужно выбрать параметр из списка или указать название вручную.")
-
-        # If only name provided, try to resolve to an existing id
         if param_id is None and param_name:
             resolved_id = get_parameter_by_name(param_name)
             if resolved_id is not None:
                 param_id = resolved_id
-
-        # Block duplicates if parameter already exists for the generation in canData
-        if param_id is not None and parameter_exists_in_generation(gen_id, param_id):
+        # Duplicate check only if есть generation и param_id
+        if gen_id_opt is not None and param_id is not None and parameter_exists_in_generation(gen_id_opt, param_id):
             raise HTTPException(status_code=409, detail="Этот параметр уже присутствует для выбранного поколения в БД (canData).")
 
-        # Parse bit/byte selections
-        def parse_int_list(val):
-            if isinstance(val, list):
-                out = []
-                for x in val:
-                    try:
-                        out.append(int(x))
-                    except Exception:
-                        continue
-                return out
-            return []
+        bytes_sel = parse_int_list(item.get("selected_bytes"))
+        bits_sel = parse_int_list(item.get("selected_bits"))
 
-        bytes_sel = parse_int_list(payload.get("selected_bytes"))
-        bits_sel = parse_int_list(payload.get("selected_bits"))
-
-        # Endianness and formula
-        endian = payload.get("endian")
+        endian = item.get("endian")
         if endian is not None:
             endian = str(endian).lower().strip()
             if endian not in ("little", "big"):
                 raise HTTPException(status_code=400, detail="Неверное значение 'endian'. Допустимо: little или big.")
         else:
             raise HTTPException(status_code=400, detail="Укажите направление чтения: little-endian или big-endian.")
-        formula = str(payload.get("formula")).strip() if payload.get("formula") else None
+        formula = str(item.get("formula")).strip() if item.get("formula") else None
 
-        new_id = insert_submission(
-            gen_id,
+        return insert_submission(
+            gen_id_opt if gen_id_opt is not None else None,
             param_id,
             param_name if param_id is None else None,
-            str(payload["can_id"]).strip(),
+            str(item["can_id"]).strip(),
             formula,
             endian,
-            str(payload.get("notes")).strip() if payload.get("notes") not in (None,) else None,
+            str(item.get("notes")).strip() if item.get("notes") not in (None,) else None,
             byte_indices=bytes_sel,
             bit_indices=bits_sel,
         )
+
+    # Either batch of items or single legacy payload
+    items = payload.get("items")
+    saved_ids: list[int] = []
+    try:
+        gen_id = None
+        if payload.get("vehicle_id") not in (None, ""):
+            try:
+                gen_id = int(payload["vehicle_id"])  # can be None for custom
+            except Exception:
+                gen_id = None
+
+        if items and isinstance(items, list):
+            for it in items:
+                saved_ids.append(process_one(it, gen_id))
+        else:
+            saved_ids.append(process_one(payload, gen_id))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Insert failed: {e}")
 
-    # Save JSON snapshot to filesystem
+    # Save JSON snapshot to filesystem (single or multi)
     try:
         now = datetime.now()
         y = f"{now.year:04d}"
@@ -152,7 +157,6 @@ def api_submit(payload: dict) -> JSONResponse:
         base_dir = os.path.join(EXPORT_DIR, y, m, d)
         os.makedirs(base_dir, exist_ok=True)
 
-        # Next sequential index in the daily folder
         existing = [f for f in os.listdir(base_dir) if f.lower().endswith('.json')]
         def parse_idx(name: str) -> int:
             try:
@@ -162,38 +166,42 @@ def api_submit(payload: dict) -> JSONResponse:
         next_idx = (max([parse_idx(n) for n in existing] + [0]) + 1)
         idx_str = f"{next_idx:03d}"
 
-        can_id_safe = re.sub(r"[^0-9A-Za-zx]+", "-", str(payload["can_id"]))
-        filename = f"{idx_str}_{can_id_safe}.json"
+        file_label = "MULTI"
+        if items and len(items) > 0:
+            can_for_name = str(items[0].get("can_id", "")).strip()
+        else:
+            can_for_name = str(payload.get("can_id", "")).strip()
+        if can_for_name:
+            file_label = re.sub(r"[^0-9A-Za-zx]+", "-", can_for_name)
+
+        filename = f"{idx_str}_{file_label}.json" if (not items or len(items)==1) else f"{idx_str}_MULTI.json"
         out_path = os.path.join(base_dir, filename)
 
         snapshot = {
-            "db_submission_id": new_id,
+            "db_submission_ids": saved_ids,
+            "count": len(saved_ids),
             "timestamp": now.isoformat(),
-            "make": payload.get("make"),
-            "model": payload.get("model"),
-            "generation_label": payload.get("generation_label"),
+            "make": payload.get("make") or payload.get("make_custom"),
+            "model": payload.get("model") or payload.get("model_custom"),
+            "generation_label": payload.get("generation_label") or payload.get("generation_custom"),
             "generation_id": gen_id,
-            "parameter_id": param_id,
-            "parameter_name": param_name if param_id is None else None,
-            "can_id": str(payload["can_id"]).strip(),
-            "formula": formula,
-            "endian": endian,
-            "notes": payload.get("notes"),
-            "selected_bytes": bytes_sel,
-            "selected_bits": bits_sel,
+            "items": items if items else [payload],
         }
+        # If generation is custom (no id) — include full parameter catalog for future use
+        if gen_id is None:
+            snapshot["all_parameters"] = get_parameters(None, 10000)
+
         with open(out_path, 'w', encoding='utf-8') as f:
             json.dump(snapshot, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        # Do not fail submission if file save fails; just report path in response
         return JSONResponse({
-            "id": new_id,
+            "saved": len(saved_ids),
             "status": "ok",
             "file_saved": False,
             "error": str(e),
         }, status_code=201)
 
-    return JSONResponse({"id": new_id, "status": "ok", "file_saved": True}, status_code=201)
+    return JSONResponse({"saved": len(saved_ids), "status": "ok", "file_saved": True}, status_code=201)
 
 
 @app.get("/api/health")

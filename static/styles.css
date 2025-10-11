@@ -28,3 +28,10 @@ pre{ background:var(--panel); padding:12px; border-radius:6px; border:1px solid 
 .bits{ display:grid; grid-template-columns: repeat(8, 1fr); gap:4px; width:100%; }
 .bit{ height:14px; border:1px solid #2a3144; border-radius:3px; background:#0f121a; cursor:pointer; }
 .bit.selected{ background:#2ecc71; border-color:#2ecc71; }
+
+/* Params list */
+.params-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.param-item{ border:1px solid #222633; border-radius:8px; padding:12px; margin:12px 0; background:var(--panel); }
+.param-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
+.param-actions{ display:flex; justify-content:flex-end; }
+.param-title{ font-weight:700; color:#cbd3e3; margin:0 0 8px; }

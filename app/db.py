@@ -40,14 +40,15 @@ class DB:
             required_cols = {"parameter_name", "byte_indices", "bit_indices", "formula", "endian"}
             missing_required = any(c not in cols for c in required_cols)
             param_id_notnull = bool(cols.get("parameter_id", (None, None, None, 0))[3]) if cols.get("parameter_id") else False
+            vehicle_id_notnull = bool(cols.get("vehicle_id", (None, None, None, 0))[3]) if cols.get("vehicle_id") else False
 
-            if missing_required or param_id_notnull:
+            if missing_required or param_id_notnull or vehicle_id_notnull:
                 con.execute("BEGIN TRANSACTION")
                 con.execute(
                     f"""
                     CREATE TABLE {table}_new (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        vehicle_id INTEGER NOT NULL,
+                        vehicle_id INTEGER,
                         parameter_id INTEGER,
                         parameter_name TEXT,
                         byte_indices TEXT,

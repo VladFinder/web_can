@@ -51,7 +51,7 @@ def ensure_submission_table_sql(table_name: str) -> str:
     return f"""
     CREATE TABLE IF NOT EXISTS {table_name} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        vehicle_id INTEGER NOT NULL,
+        vehicle_id INTEGER,
         parameter_id INTEGER,
         parameter_name TEXT,
         byte_indices TEXT,
