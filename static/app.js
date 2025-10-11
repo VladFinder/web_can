@@ -21,6 +21,8 @@ const els = {
   status: document.getElementById('status'),
   dbCheck: document.getElementById('db-check'),
   paramList: document.getElementById('param-list'),
+  existingList: document.getElementById('existing-params'),
+  existingInfo: document.getElementById('existing-info'),
 };
 
 // In-memory parameter cache: name -> id
@@ -122,6 +124,9 @@ async function loadGenerations(make, model) {
   custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
   els.generation.appendChild(custom);
   els.generationRow.style.display = '';
+  // After list shown, clear existing params view until user selects a generation
+  if (els.existingList) els.existingList.innerHTML = '';
+  if (els.existingInfo) els.existingInfo.textContent = 'Выберите поколение, чтобы увидеть список.';
 }
 
 async function loadParameters() {
@@ -162,6 +167,8 @@ if (els.generation) {
   els.generation.addEventListener('change', () => {
     const isCustom = els.generation.value === '__custom__';
     els.genCustomWrap.style.display = isCustom ? '' : 'none';
+    const gid = currentVehicleId();
+    if (gid) loadExistingParams(gid); else { if (els.existingList) els.existingList.innerHTML = ''; if (els.existingInfo) els.existingInfo.textContent = 'Кастомное ТС или поколение не выбрано.'; }
   });
 }
 
@@ -252,6 +259,7 @@ function addParamItem() {
           <option value="little">Little-endian</option>
           <option value="big">Big-endian</option>
         </select>
+        <div class="hint">Little-endian — младший байт/бит идёт первым; Big-endian — старший байт/бит идёт первым.</div>
       </div>
     </div>
     <div class="row" style="margin-top:8px;">
@@ -356,4 +364,23 @@ function makeParamItem(node) {
 
 if (els.addParamBtn) {
   els.addParamBtn.addEventListener('click', addParamItem);
+}
+
+async function loadExistingParams(generationId){
+  try{
+    const items = await fetchJSON(`/api/generation-parameters?generation_id=${encodeURIComponent(generationId)}`);
+    if (els.existingList){
+      els.existingList.innerHTML = '';
+      for (const it of items){
+        const li = document.createElement('li');
+        const name = document.createElement('span'); name.textContent = it.name;
+        const badge = document.createElement('span'); badge.className='badge'; badge.textContent = `x${it.entries}`;
+        li.appendChild(name); li.appendChild(badge);
+        els.existingList.appendChild(li);
+      }
+    }
+    if (els.existingInfo){ els.existingInfo.textContent = items.length ? `Найдено: ${items.length}` : 'Нет параметров для этого поколения.'; }
+  }catch(e){
+    if (els.existingInfo) els.existingInfo.textContent = `Ошибка загрузки: ${e.message}`;
+  }
 }

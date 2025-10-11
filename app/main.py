@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .db import db, get_makes, get_models, get_parameters, get_vehicles, insert_submission, get_generations, parameter_exists_in_generation, get_parameter_by_name
+from .db import db, get_makes, get_models, get_parameters, get_vehicles, insert_submission, get_generations, parameter_exists_in_generation, get_parameter_by_name, get_generation_parameters
 from .config import DB_PATH, EXPORT_DIR
 import os
 import re
@@ -70,6 +70,16 @@ def api_vehicles(make: Optional[str] = None, model: Optional[str] = None) -> JSO
 def api_generations(make: str = Query(...), model: str = Query(...)) -> JSONResponse:
     require_db()
     return JSONResponse(get_generations(make, model))
+
+
+@app.get("/api/generation-parameters")
+def api_generation_parameters(generation_id: int = Query(...)) -> JSONResponse:
+    require_db()
+    try:
+        gid = int(generation_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="generation_id должно быть числом")
+    return JSONResponse(get_generation_parameters(gid))
 
 
 @app.get("/api/parameters")

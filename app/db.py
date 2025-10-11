@@ -184,6 +184,19 @@ def parameter_exists_in_generation(generation_id: int, parameter_id: int) -> boo
     return len(rows) > 0
 
 
+def get_generation_parameters(generation_id: int) -> List[Dict[str, Any]]:
+    pt = TABLES["parameters"]
+    sql = (
+        f"SELECT p.{pt['id']} AS id, p.{pt['name']} AS name, COUNT(*) AS entries "
+        f"FROM canData d JOIN {pt['table']} p ON d.canParameterId = p.{pt['id']} "
+        f"WHERE d.generationId = ? "
+        f"GROUP BY p.{pt['id']}, p.{pt['name']} "
+        f"ORDER BY p.{pt['name']}"
+    )
+    rows = db.query(sql, (generation_id,))
+    return [dict(r) for r in rows]
+
+
 def insert_submission(vehicle_id: int, parameter_id: Optional[int], parameter_name: Optional[str], can_id: str, formula: Optional[str], endian: Optional[str], notes: Optional[str], byte_indices: Optional[List[int]] = None, bit_indices: Optional[List[int]] = None) -> int:
     st = TABLES["submissions"]["table"]
     sql = f"""

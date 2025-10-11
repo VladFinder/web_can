@@ -35,3 +35,9 @@ pre{ background:var(--panel); padding:12px; border-radius:6px; border:1px solid 
 .param-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
 .param-actions{ display:flex; justify-content:flex-end; }
 .param-title{ font-weight:700; color:#cbd3e3; margin:0 0 8px; }
+.params-layout{ display:grid; grid-template-columns: 2fr 1fr; gap:16px; align-items:start; }
+.sidebar{ position:sticky; top:12px; align-self:start; border:1px solid #222633; border-radius:8px; padding:12px; background:var(--panel); }
+.list{ list-style:none; padding:0; margin:8px 0 0; }
+.list li{ padding:6px 8px; border-bottom:1px solid #1c202b; display:flex; justify-content:space-between; gap:8px; }
+.list li:last-child{ border-bottom:none; }
+.badge{ background:#0d2b16; color:#9be7af; border:1px solid #1d6f3a; border-radius:6px; padding:2px 6px; font-size:12px; }

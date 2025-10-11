@@ -40,37 +40,23 @@
           </div>
         </div>
 
-        <section class="params">
-          <div class="params-head">
-            <h2>Параметры</h2>
-            <button type="button" id="add-param">+ Добавить параметр</button>
-          </div>
-          <div id="params-container"></div>
-          <datalist id="param-list"></datalist>
-        </section>
+        <div class="params-layout">
+          <section class="params">
+            <div class="params-head">
+              <h2>Параметры</h2>
+              <button type="button" id="add-param">+ Добавить параметр</button>
+            </div>
+            <div id="params-container"></div>
+            <datalist id="param-list"></datalist>
+          </section>
 
-        <div class="row">
-          <label for="can_id">CAN ID</label>
-          <input id="can_id" placeholder="0x123" required />
+          <aside class="sidebar">
+            <h2>Параметры в БД</h2>
+            <div id="existing-info" class="muted">Выберите поколение, чтобы увидеть список.</div>
+            <ul id="existing-params" class="list"></ul>
+          </aside>
         </div>
-
-        
-
-        <div class="row">
-          <label for="formula">Формула</label>
-          <input id="formula" placeholder="например: (value * 0.1) - 40" />
-        </div>
-
-        <div class="row">
-          <label for="endian">Направление чтения</label>
-          <select id="endian" required>
-            <option value="" disabled selected>— выберите endianness —</option>
-            <option value="little">Little-endian</option>
-            <option value="big">Big-endian</option>
-          </select>
-          <div class="hint">Little-endian — младший байт/бит идёт первым; Big-endian — старший байт/бит идёт первым.</div>
-        </div>
-
+               
         <div class="row">
           <label for="notes">Примечание</label>
           <textarea id="notes" rows="3" placeholder="Доп. информация (байты, битовая маска, расчёт и пр.)"></textarea>
