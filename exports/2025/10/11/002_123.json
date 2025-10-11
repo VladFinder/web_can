@@ -1,0 +1,26 @@
+{
+  "db_submission_ids": [
+    2
+  ],
+  "count": 1,
+  "timestamp": "2025-10-11T16:06:10.301110",
+  "make": "Lada",
+  "model": "Largus",
+  "generation_label": "2021 v2.1",
+  "generation_id": 54,
+  "items": [
+    {
+      "parameter_id": 408,
+      "can_id": "123",
+      "formula": null,
+      "endian": "little",
+      "notes": null,
+      "selected_bits": [
+        27
+      ],
+      "selected_bytes": [
+        3
+      ]
+    }
+  ]
+}
