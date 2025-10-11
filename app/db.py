@@ -34,6 +34,43 @@ class DB:
         with self.connect() as con:
             con.executescript(sql)
 
+            # Migration: ensure `parameter_name` exists and `parameter_id` is nullable
+            info = con.execute(f"PRAGMA table_info({table})").fetchall()
+            cols = {row[1]: row for row in info}  # name -> row
+            has_param_name = "parameter_name" in cols
+            param_id_notnull = bool(cols.get("parameter_id", (None, None, None, 0))[3]) if cols.get("parameter_id") else False
+
+            if (not has_param_name) or param_id_notnull:
+                con.execute("BEGIN TRANSACTION")
+                con.execute(
+                    f"""
+                    CREATE TABLE {table}_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        vehicle_id INTEGER NOT NULL,
+                        parameter_id INTEGER,
+                        parameter_name TEXT,
+                        byte_indices TEXT,
+                        bit_indices TEXT,
+                        can_id TEXT NOT NULL,
+                        multiplier REAL,
+                        offset REAL,
+                        notes TEXT,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    );
+                    """
+                )
+                # Copy data; parameter_name will be NULL
+                existing_cols = [c for c in [
+                    "id","vehicle_id","parameter_id","parameter_name","byte_indices","bit_indices","can_id","multiplier","offset","notes","created_at"
+                ] if c in cols]
+                col_list = ",".join(existing_cols)
+                con.execute(
+                    f"INSERT INTO {table}_new ({col_list}) SELECT {col_list} FROM {table}"
+                )
+                con.execute(f"DROP TABLE {table}")
+                con.execute(f"ALTER TABLE {table}_new RENAME TO {table}")
+                con.execute("COMMIT")
+
 
 db = DB()
 
@@ -61,6 +98,29 @@ def get_models(make: str) -> List[str]:
     )
     rows = db.query(sql, (make,))
     return [r["model"] for r in rows]
+
+
+def get_generations(make: str, model: str) -> List[Dict[str, Any]]:
+    mt = TABLES["manufacturers"]
+    mdl = TABLES["models"]
+    gen = TABLES["generations"]
+    sql = (
+        f"SELECT g.{gen['id']} AS id, g.{gen['name']} AS name, "
+        f"g.{gen['major']} AS major, g.{gen['minor']} AS minor "
+        f"FROM {gen['table']} g "
+        f"JOIN {mdl['table']} m ON g.{gen['model_id']} = m.{mdl['id']} "
+        f"JOIN {mt['table']} mf ON m.{mdl['manufacturer_id']} = mf.{mt['id']} "
+        f"WHERE mf.{mt['name']} = ? AND m.{mdl['name']} = ? "
+        f"ORDER BY g.{gen['name']}, g.{gen['major']}, g.{gen['minor']}"
+    )
+    rows = db.query(sql, (make, model))
+    result: List[Dict[str, Any]] = []
+    for r in rows:
+        label_parts = [r["name"]] if r["name"] else []
+        if r["major"] is not None and r["minor"] is not None:
+            label_parts.append(f"v{r['major']}.{r['minor']}")
+        result.append({"id": r["id"], "label": " ".join(label_parts) or str(r["id"])})
+    return result
 
 
 def get_vehicles(make: Optional[str] = None, model: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -106,10 +166,30 @@ def get_parameters(query: Optional[str] = None, limit: int = 200) -> List[Dict[s
     return [dict(r) for r in rows]
 
 
-def insert_submission(vehicle_id: int, parameter_id: int, can_id: str, multiplier: Optional[float], offset: Optional[float], notes: Optional[str]) -> int:
+def get_parameter_by_name(name: str) -> Optional[int]:
+    pt = TABLES["parameters"]
+    sql = f"SELECT {pt['id']} AS id FROM {pt['table']} WHERE {pt['name']} = ? LIMIT 1"
+    rows = db.query(sql, (name,))
+    return int(rows[0]["id"]) if rows else None
+
+
+def parameter_exists_in_generation(generation_id: int, parameter_id: int) -> bool:
+    # canData(generationId, canParameterId, ...)
+    sql = (
+        "SELECT 1 FROM canData WHERE generationId = ? AND canParameterId = ? LIMIT 1"
+    )
+    rows = db.query(sql, (generation_id, parameter_id))
+    return len(rows) > 0
+
+
+def insert_submission(vehicle_id: int, parameter_id: Optional[int], parameter_name: Optional[str], can_id: str, multiplier: Optional[float], offset: Optional[float], notes: Optional[str], byte_indices: Optional[List[int]] = None, bit_indices: Optional[List[int]] = None) -> int:
     st = TABLES["submissions"]["table"]
     sql = f"""
-        INSERT INTO {st} (vehicle_id, parameter_id, can_id, multiplier, offset, notes)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO {st} (vehicle_id, parameter_id, parameter_name, can_id, multiplier, offset, notes, byte_indices, bit_indices)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
-    return db.execute(sql, (vehicle_id, parameter_id, can_id, multiplier, offset, notes))
+    import json
+    return db.execute(sql, (
+        vehicle_id, parameter_id, parameter_name, can_id, multiplier, offset, notes,
+        json.dumps(byte_indices or []), json.dumps(bit_indices or []),
+    ))

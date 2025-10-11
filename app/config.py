@@ -21,6 +21,14 @@ TABLES = {
         "name": os.getenv("WEB_CAN_COL_MODEL_NAME", "carModelName"),
         "manufacturer_id": os.getenv("WEB_CAN_COL_MODEL_MANUFACTURER_ID", "manufacturerId"),
     },
+    "generations": {
+        "table": os.getenv("WEB_CAN_TBL_GENERATIONS", "generations"),
+        "id": os.getenv("WEB_CAN_COL_GENERATION_ID", "generationId"),
+        "name": os.getenv("WEB_CAN_COL_GENERATION_NAME", "generationName"),
+        "model_id": os.getenv("WEB_CAN_COL_GENERATION_MODEL_ID", "carModelId"),
+        "major": os.getenv("WEB_CAN_COL_GENERATION_MAJOR", "MajorVersion"),
+        "minor": os.getenv("WEB_CAN_COL_GENERATION_MINOR", "MinorVersion"),
+    },
     "parameters": {
         "table": os.getenv("WEB_CAN_TBL_PARAMS", "canParameters"),
         "id": os.getenv("WEB_CAN_COL_PARAM_ID", "canParameterId"),
@@ -38,7 +46,10 @@ def ensure_submission_table_sql(table_name: str) -> str:
     CREATE TABLE IF NOT EXISTS {table_name} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vehicle_id INTEGER NOT NULL,
-        parameter_id INTEGER NOT NULL,
+        parameter_id INTEGER,
+        parameter_name TEXT,
+        byte_indices TEXT,
+        bit_indices TEXT,
         can_id TEXT NOT NULL,
         multiplier REAL,
         offset REAL,

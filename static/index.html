@@ -22,21 +22,32 @@
           <select id="model" required disabled></select>
         </div>
 
-        <div class="row" id="vehicle-row" style="display:none;">
-          <label for="vehicle">ТС</label>
-          <select id="vehicle"></select>
-          <div class="hint">Появится, если найдено несколько вариантов.</div>
+        <div class="row" id="generation-row" style="display:none;">
+          <label for="generation">Поколение</label>
+          <select id="generation" required></select>
+          <div class="hint">Выберите поколение модели (если доступно).</div>
         </div>
 
         <div class="row">
           <label for="param">Параметр</label>
           <input list="param-list" id="param" placeholder="например: Обороты двигателя" required />
           <datalist id="param-list"></datalist>
+          <div id="param-custom" class="row" style="display:none; margin-top:8px;">
+            <label for="param_name">Своё название параметра</label>
+            <input id="param_name" placeholder="Введите название" />
+          </div>
+          <div class="hint">Если параметра нет, выберите внизу “Другое (ввести вручную)” или просто введите своё название.</div>
         </div>
 
         <div class="row">
           <label for="can_id">CAN ID</label>
           <input id="can_id" placeholder="0x123" required />
+        </div>
+
+        <div class="row">
+          <label>Выбор байтов и битов</label>
+          <div id="bitgrid" class="bitgrid" aria-label="битовая сетка из 8 байтов"></div>
+          <div class="hint">Нажмите на байт для выбора всех бит. Повторное нажатие снимает выделение. Нажмите на отдельные биты для частичного выбора байта.</div>
         </div>
 
         <div class="row two">
@@ -71,4 +82,3 @@
     <script src="/static/app.js"></script>
   </body>
   </html>
-
