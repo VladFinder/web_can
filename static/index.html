@@ -6,7 +6,7 @@
     <title>CAN параметры — отправка</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
-  <body class="with-drawer">
+  <body>
     <main class="container">
       <h1>Отправка параметров CAN</h1>
       <p class="muted">Выберите ТС и параметр, затем укажите идентификатор и детали.</p>
@@ -40,6 +40,10 @@
           </div>
         </div>
 
+        <div class="row">
+          <button type="button" id="open-existing">Показать параметры в БД</button>
+        </div>
+
         <section class="params">
           <div class="params-head">
             <h2>Параметры</h2>
@@ -48,7 +52,7 @@
           <div id="params-container"></div>
           <datalist id="param-list"></datalist>
         </section>
-               
+
         <div class="row">
           <label for="notes">Примечание</label>
           <textarea id="notes" rows="3" placeholder="Доп. информация (байты, битовая маска, расчёт и пр.)"></textarea>
@@ -67,15 +71,17 @@
       </section>
     </main>
 
-    <div id="drawer" class="drawer" aria-hidden="false">
+    <div id="drawer" class="drawer" aria-hidden="true">
       <div class="drawer-header">
         <h2>Параметры в БД</h2>
+        <button type="button" id="close-drawer" aria-label="Закрыть">×</button>
       </div>
       <div id="existing-info" class="muted">Выберите поколение, чтобы увидеть список.</div>
       <ul id="existing-params" class="list"></ul>
     </div>
-    
+    <div id="backdrop" class="backdrop"></div>
 
     <script src="/static/app.js"></script>
   </body>
   </html>
+
