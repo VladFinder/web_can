@@ -1,4 +1,4 @@
-async function fetchJSON(url) {
+﻿async function fetchJSON(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
   return res.json();
@@ -23,10 +23,6 @@ const els = {
   paramList: document.getElementById('param-list'),
   existingList: document.getElementById('existing-params'),
   existingInfo: document.getElementById('existing-info'),
-  openExistingBtn: document.getElementById('open-existing'),
-  drawer: document.getElementById('drawer'),
-  backdrop: document.getElementById('backdrop'),
-  closeDrawerBtn: document.getElementById('close-drawer'),
 };
 
 // In-memory parameter cache: name -> id
@@ -46,9 +42,9 @@ function setDbCheck(msg, ok = true) {
 async function initDbCheck() {
   try {
     const makes = await fetchJSON('/api/makes');
-    setDbCheck(`БД доступна. Марок: ${makes.length}.`);
+    setDbCheck(`Р‘Р” РґРѕСЃС‚СѓРїРЅР°. РњР°СЂРѕРє: ${makes.length}.`);
   } catch (e) {
-    setDbCheck(`БД недоступна: ${e.message}. Поместите db.sqlite в корень или задайте WEB_CAN_DB.`, false);
+    setDbCheck(`Р‘Р” РЅРµРґРѕСЃС‚СѓРїРЅР°: ${e.message}. РџРѕРјРµСЃС‚РёС‚Рµ db.sqlite РІ РєРѕСЂРµРЅСЊ РёР»Рё Р·Р°РґР°Р№С‚Рµ WEB_CAN_DB.`, false);
   }
 }
 
@@ -57,7 +53,7 @@ async function loadMakes() {
   const makes = await fetchJSON('/api/makes');
   const def = document.createElement('option');
   def.value = '';
-  def.textContent = '— выберите марку —';
+  def.textContent = 'вЂ” РІС‹Р±РµСЂРёС‚Рµ РјР°СЂРєСѓ вЂ”';
   def.disabled = true;
   def.selected = true;
   els.make.appendChild(def);
@@ -67,7 +63,7 @@ async function loadMakes() {
     els.make.appendChild(o);
   }
   const custom = document.createElement('option');
-  custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
+  custom.value = '__custom__'; custom.textContent = 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)';
   els.make.appendChild(custom);
 }
 
@@ -79,14 +75,14 @@ async function loadModels(make) {
   if (!make || make === '__custom__') {
     els.model.disabled = false;
     const custom = document.createElement('option');
-    custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
+    custom.value = '__custom__'; custom.textContent = 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)';
     els.model.appendChild(custom);
     return;
   }
   const models = await fetchJSON(`/api/models?make=${encodeURIComponent(make)}`);
   const def = document.createElement('option');
   def.value = '';
-  def.textContent = '— выберите модель —';
+  def.textContent = 'вЂ” РІС‹Р±РµСЂРёС‚Рµ РјРѕРґРµР»СЊ вЂ”';
   def.disabled = true;
   def.selected = true;
   els.model.appendChild(def);
@@ -96,7 +92,7 @@ async function loadModels(make) {
     els.model.appendChild(o);
   }
   const custom = document.createElement('option');
-  custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
+  custom.value = '__custom__'; custom.textContent = 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)';
   els.model.appendChild(custom);
   els.model.disabled = false;
 }
@@ -107,14 +103,14 @@ async function loadGenerations(make, model) {
   if (!make || !model || make === '__custom__' || model === '__custom__') {
     els.generationRow.style.display = '';
     const custom = document.createElement('option');
-    custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
+    custom.value = '__custom__'; custom.textContent = 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)';
     els.generation.appendChild(custom);
     return null;
   }
   const gens = await fetchJSON(`/api/generations?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
   const def = document.createElement('option');
   def.value = '';
-  def.textContent = '— выберите поколение —';
+  def.textContent = 'вЂ” РІС‹Р±РµСЂРёС‚Рµ РїРѕРєРѕР»РµРЅРёРµ вЂ”';
   def.disabled = true;
   def.selected = true;
   els.generation.appendChild(def);
@@ -125,12 +121,12 @@ async function loadGenerations(make, model) {
     els.generation.appendChild(o);
   }
   const custom = document.createElement('option');
-  custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
+  custom.value = '__custom__'; custom.textContent = 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)';
   els.generation.appendChild(custom);
   els.generationRow.style.display = '';
   // After list shown, clear existing params view until user selects a generation
   if (els.existingList) els.existingList.innerHTML = '';
-  if (els.existingInfo) els.existingInfo.textContent = 'Выберите поколение, чтобы увидеть список.';
+  if (els.existingInfo) els.existingInfo.textContent = 'Р’С‹Р±РµСЂРёС‚Рµ РїРѕРєРѕР»РµРЅРёРµ, С‡С‚РѕР±С‹ СѓРІРёРґРµС‚СЊ СЃРїРёСЃРѕРє.';
 }
 
 async function loadParameters() {
@@ -144,7 +140,7 @@ async function loadParameters() {
     if (!paramIndex.has(p.name)) paramIndex.set(p.name, p.id);
   }
   const custom = document.createElement('option');
-  custom.value = 'Другое (ввести вручную)';
+  custom.value = 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)';
   els.paramList.appendChild(custom);
 }
 
@@ -172,16 +168,13 @@ if (els.generation) {
     const isCustom = els.generation.value === '__custom__';
     els.genCustomWrap.style.display = isCustom ? '' : 'none';
     const gid = currentVehicleId();
-    // If drawer is open, refresh the list
-    if (els.drawer && els.drawer.classList.contains('open')) {
-      if (gid) loadExistingParams(gid); else { if (els.existingList) els.existingList.innerHTML = ''; if (els.existingInfo) els.existingInfo.textContent = 'Кастомное ТС или поколение не выбрано.'; }
-    }
+    if (gid) loadExistingParams(gid); else { if (els.existingList) els.existingList.innerHTML = ''; if (els.existingInfo) els.existingInfo.textContent = 'РљР°СЃС‚РѕРјРЅРѕРµ РўРЎ РёР»Рё РїРѕРєРѕР»РµРЅРёРµ РЅРµ РІС‹Р±СЂР°РЅРѕ.'; }
   });
 }
 
 els.form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  setStatus('Отправка...', true);
+  setStatus('РћС‚РїСЂР°РІРєР°...', true);
 
   try {
     const vehicleId = currentVehicleId();
@@ -208,10 +201,10 @@ els.form.addEventListener('submit', async (e) => {
 
     if (!res.ok) {
       const detail = await res.json().catch(() => ({}));
-      throw new Error(detail.detail || `Ошибка ${res.status}`);
+      throw new Error(detail.detail || `РћС€РёР±РєР° ${res.status}`);
     }
     const data = await res.json();
-    setStatus(`Сохранено (${data.saved || 0} шт.).`, true);
+    setStatus(`РЎРѕС…СЂР°РЅРµРЅРѕ (${data.saved || 0} С€С‚.).`, true);
     els.form.reset();
     els.model.disabled = true;
     if (els.generationRow) els.generationRow.style.display = 'none';
@@ -241,14 +234,14 @@ function addParamItem() {
   const node = document.createElement('div');
   node.className = 'param-item';
   node.innerHTML = `
-    <div class="param-title">Параметр #${idx}</div>
+    <div class="param-title">РџР°СЂР°РјРµС‚СЂ #${idx}</div>
     <div class="param-grid">
       <div>
-        <label>Параметр</label>
-        <input list="param-list" class="param-input" placeholder="например: Обороты двигателя" />
+        <label>РџР°СЂР°РјРµС‚СЂ</label>
+        <input list="param-list" class="param-input" placeholder="РЅР°РїСЂРёРјРµСЂ: РћР±РѕСЂРѕС‚С‹ РґРІРёРіР°С‚РµР»СЏ" />
         <div class="row" style="display:none; margin-top:6px;">
-          <label>Своё название</label>
-          <input class="param-custom" placeholder="Введите название" />
+          <label>РЎРІРѕС‘ РЅР°Р·РІР°РЅРёРµ</label>
+          <input class="param-custom" placeholder="Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ" />
         </div>
       </div>
       <div>
@@ -256,25 +249,25 @@ function addParamItem() {
         <input class="can-id" placeholder="0x123" />
       </div>
       <div>
-        <label>Формула</label>
+        <label>Р¤РѕСЂРјСѓР»Р°</label>
         <input class="formula" placeholder="(value * 0.1) - 40" />
       </div>
       <div>
-        <label>Направление чтения</label>
+        <label>РќР°РїСЂР°РІР»РµРЅРёРµ С‡С‚РµРЅРёСЏ</label>
         <select class="endian">
-          <option value="" disabled selected>— выберите endianness —</option>
+          <option value="" disabled selected>вЂ” РІС‹Р±РµСЂРёС‚Рµ endianness вЂ”</option>
           <option value="little">Little-endian</option>
           <option value="big">Big-endian</option>
         </select>
-        <div class="hint">Little-endian — младший байт/бит идёт первым; Big-endian — старший байт/бит идёт первым.</div>
+        <div class="hint">Little-endian вЂ” РјР»Р°РґС€РёР№ Р±Р°Р№С‚/Р±РёС‚ РёРґС‘С‚ РїРµСЂРІС‹Рј; Big-endian вЂ” СЃС‚Р°СЂС€РёР№ Р±Р°Р№С‚/Р±РёС‚ РёРґС‘С‚ РїРµСЂРІС‹Рј.</div>
       </div>
     </div>
     <div class="row" style="margin-top:8px;">
-      <label>Выбор байтов и битов</label>
+      <label>Р’С‹Р±РѕСЂ Р±Р°Р№С‚РѕРІ Рё Р±РёС‚РѕРІ</label>
       <div class="bitgrid"></div>
-      <div class="hint">Клик по байту — выбрать все биты. Клик по биту — частичный выбор.</div>
+      <div class="hint">РљР»РёРє РїРѕ Р±Р°Р№С‚Сѓ вЂ” РІС‹Р±СЂР°С‚СЊ РІСЃРµ Р±РёС‚С‹. РљР»РёРє РїРѕ Р±РёС‚Сѓ вЂ” С‡Р°СЃС‚РёС‡РЅС‹Р№ РІС‹Р±РѕСЂ.</div>
     </div>
-    <div class="param-actions"><button type="button" class="remove-param">Удалить</button></div>
+    <div class="param-actions"><button type="button" class="remove-param">РЈРґР°Р»РёС‚СЊ</button></div>
   `;
 
   const item = makeParamItem(node);
@@ -334,9 +327,9 @@ function makeParamItem(node) {
 
   input.addEventListener('input', () => {
     const v = input.value.trim();
-    const isCustom = v && (!paramIndex.has(v) || v === 'Другое (ввести вручную)');
+    const isCustom = v && (!paramIndex.has(v) || v === 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)');
     customWrap.style.display = isCustom ? '' : 'none';
-    if (v === 'Другое (ввести вручную)') customInput.focus();
+    if (v === 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)') customInput.focus();
   });
 
   removeBtn.addEventListener('click', () => {
@@ -349,11 +342,11 @@ function makeParamItem(node) {
       const name = input.value.trim();
       const match = paramIndex.has(name);
       const paramId = match ? paramIndex.get(name) : null;
-      const isCustom = !match || name === 'Другое (ввести вручную)';
-      const customName = isCustom ? (customInput.value.trim() || (name === 'Другое (ввести вручную)' ? '' : name)) : null;
+      const isCustom = !match || name === 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)';
+      const customName = isCustom ? (customInput.value.trim() || (name === 'Р”СЂСѓРіРѕРµ (РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ)' ? '' : name)) : null;
       const endianVal = endian.value;
-      if (!canId.value.trim()) throw new Error('Укажите CAN ID для одного из параметров.');
-      if (!endianVal) throw new Error('Выберите направление чтения для одного из параметров.');
+      if (!canId.value.trim()) throw new Error('РЈРєР°Р¶РёС‚Рµ CAN ID РґР»СЏ РѕРґРЅРѕРіРѕ РёР· РїР°СЂР°РјРµС‚СЂРѕРІ.');
+      if (!endianVal) throw new Error('Р’С‹Р±РµСЂРёС‚Рµ РЅР°РїСЂР°РІР»РµРЅРёРµ С‡С‚РµРЅРёСЏ РґР»СЏ РѕРґРЅРѕРіРѕ РёР· РїР°СЂР°РјРµС‚СЂРѕРІ.');
       return {
         parameter_id: paramId,
         parameter_name: customName || undefined,
@@ -373,23 +366,6 @@ if (els.addParamBtn) {
   els.addParamBtn.addEventListener('click', addParamItem);
 }
 
-// Drawer controls
-function openDrawer(){
-  if (!els.drawer) return;
-  els.drawer.classList.add('open');
-  if (els.backdrop) els.backdrop.classList.add('show');
-  const gid = currentVehicleId();
-  if (gid) loadExistingParams(gid); else { if (els.existingList) els.existingList.innerHTML=''; if (els.existingInfo) els.existingInfo.textContent = 'Кастомное ТС или поколение не выбрано.'; }
-}
-function closeDrawer(){
-  if (!els.drawer) return;
-  els.drawer.classList.remove('open');
-  if (els.backdrop) els.backdrop.classList.remove('show');
-}
-if (els.openExistingBtn) els.openExistingBtn.addEventListener('click', openDrawer);
-if (els.closeDrawerBtn) els.closeDrawerBtn.addEventListener('click', closeDrawer);
-if (els.backdrop) els.backdrop.addEventListener('click', closeDrawer);
-
 async function loadExistingParams(generationId){
   try{
     const items = await fetchJSON(`/api/generation-parameters?generation_id=${encodeURIComponent(generationId)}`);
@@ -403,8 +379,9 @@ async function loadExistingParams(generationId){
         els.existingList.appendChild(li);
       }
     }
-    if (els.existingInfo){ els.existingInfo.textContent = items.length ? `Найдено: ${items.length}` : 'Нет параметров для этого поколения.'; }
+    if (els.existingInfo){ els.existingInfo.textContent = items.length ? `РќР°Р№РґРµРЅРѕ: ${items.length}` : 'РќРµС‚ РїР°СЂР°РјРµС‚СЂРѕРІ РґР»СЏ СЌС‚РѕРіРѕ РїРѕРєРѕР»РµРЅРёСЏ.'; }
   }catch(e){
-    if (els.existingInfo) els.existingInfo.textContent = `Ошибка загрузки: ${e.message}`;
+    if (els.existingInfo) els.existingInfo.textContent = `РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё: ${e.message}`;
   }
 }
+

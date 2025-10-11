@@ -6,7 +6,7 @@
     <title>CAN параметры — отправка</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
-  <body>
+  <body class="with-drawer">
     <main class="container">
       <h1>Отправка параметров CAN</h1>
       <p class="muted">Выберите ТС и параметр, затем укажите идентификатор и детали.</p>
@@ -40,10 +40,6 @@
           </div>
         </div>
 
-        <div class="row">
-          <button type="button" id="open-existing">Показать параметры в БД</button>
-        </div>
-
         <section class="params">
           <div class="params-head">
             <h2>Параметры</h2>
@@ -71,15 +67,14 @@
       </section>
     </main>
 
-    <div id="drawer" class="drawer" aria-hidden="true">
+    <div id="drawer" class="drawer" aria-hidden="false">
       <div class="drawer-header">
         <h2>Параметры в БД</h2>
-        <button type="button" id="close-drawer" aria-label="Закрыть">×</button>
       </div>
       <div id="existing-info" class="muted">Выберите поколение, чтобы увидеть список.</div>
       <ul id="existing-params" class="list"></ul>
     </div>
-    <div id="backdrop" class="backdrop"></div>
+    
 
     <script src="/static/app.js"></script>
   </body>
