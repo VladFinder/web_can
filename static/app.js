@@ -78,10 +78,22 @@ async function loadModels(make) {
   els.generationRow.style.display = 'none';
   els.generation.innerHTML = '';
   if (!make || make === '__custom__') {
+    // При кастомной марке сразу показываем поле своей модели
     els.model.disabled = false;
     const custom = document.createElement('option');
     custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
+    custom.selected = true;
     els.model.appendChild(custom);
+    if (els.modelCustomWrap) els.modelCustomWrap.style.display = '';
+
+    // И сразу готовим кастомное поколение
+    els.generationRow.style.display = '';
+    els.generation.innerHTML = '';
+    const gOpt = document.createElement('option');
+    gOpt.value = '__custom__'; gOpt.textContent = 'Другое (ввести вручную)';
+    gOpt.selected = true;
+    els.generation.appendChild(gOpt);
+    if (els.genCustomWrap) els.genCustomWrap.style.display = '';
     return;
   }
   const models = await fetchJSON(`/api/models?make=${encodeURIComponent(make)}`);
@@ -100,6 +112,8 @@ async function loadModels(make) {
   custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
   els.model.appendChild(custom);
   els.model.disabled = false;
+  if (els.modelCustomWrap) els.modelCustomWrap.style.display = 'none';
+  if (els.genCustomWrap) els.genCustomWrap.style.display = 'none';
 }
 
 async function loadGenerations(make, model) {
@@ -109,7 +123,9 @@ async function loadGenerations(make, model) {
     els.generationRow.style.display = '';
     const custom = document.createElement('option');
     custom.value = '__custom__'; custom.textContent = 'Другое (ввести вручную)';
+    custom.selected = true;
     els.generation.appendChild(custom);
+    if (els.genCustomWrap) els.genCustomWrap.style.display = '';
     return null;
   }
   const gens = await fetchJSON(`/api/generations?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
@@ -401,7 +417,7 @@ function applyTheme(theme){
 function updateThemeLabel(){
   if (!els.themeToggle) return;
   const cur = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  if (cur === 'light') els.themeToggle.textContent = '🌞 Светлая'; else els.themeToggle.textContent = '🌙 Тёмная';
+  if (cur === 'light') els.themeToggle.textContent = 'Светлая'; else els.themeToggle.textContent = 'Тёмная';
 }
 function initTheme(){
   const saved = localStorage.getItem('theme');
