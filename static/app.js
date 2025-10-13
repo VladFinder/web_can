@@ -27,6 +27,7 @@ const els = {
   drawer: document.getElementById('drawer'),
   backdrop: document.getElementById('backdrop'),
   closeDrawerBtn: document.getElementById('close-drawer'),
+  themeToggle: document.getElementById('theme-toggle'),
 };
 
 // In-memory parameter cache: name -> id
@@ -389,6 +390,35 @@ if (els.openExistingBtn) els.openExistingBtn.addEventListener('click', openDrawe
 if (els.closeDrawerBtn) els.closeDrawerBtn.addEventListener('click', closeDrawer);
 if (els.backdrop) els.backdrop.addEventListener('click', closeDrawer);
 
+// ----- Theme toggle -----
+function applyTheme(theme){
+  const root = document.documentElement;
+  if (theme === 'light') root.setAttribute('data-theme','light');
+  else if (theme === 'dark') root.setAttribute('data-theme','dark');
+  else root.removeAttribute('data-theme');
+  updateThemeLabel();
+}
+function updateThemeLabel(){
+  if (!els.themeToggle) return;
+  const cur = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  if (cur === 'light') els.themeToggle.textContent = '🌞 Светлая'; else els.themeToggle.textContent = '🌙 Тёмная';
+}
+function initTheme(){
+  const saved = localStorage.getItem('theme');
+  if (saved){ applyTheme(saved); }
+  else { updateThemeLabel(); }
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  const next = cur === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  localStorage.setItem('theme', next);
+}
+if (els.themeToggle){
+  els.themeToggle.addEventListener('click', toggleTheme);
+  initTheme();
+}
+
 async function loadExistingParams(generationId){
   try{
     const items = await fetchJSON(`/api/generation-parameters?generation_id=${encodeURIComponent(generationId)}`);
@@ -407,4 +437,3 @@ async function loadExistingParams(generationId){
     if (els.existingInfo) els.existingInfo.textContent = `Ошибка загрузки: ${e.message}`;
   }
 }
-
