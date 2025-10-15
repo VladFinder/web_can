@@ -36,6 +36,7 @@ pre{ background:var(--panel); padding:12px; border-radius:6px; border:1px solid 
 .param-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
 .param-actions{ display:flex; justify-content:flex-end; }
 .param-title{ font-weight:700; color:#cbd3e3; margin:0 0 8px; }
+.param-grid.three{ grid-template-columns: repeat(3, 1fr); }
 .params-layout{ display:block; }
 .sidebar{ display:none; }
 .list{ list-style:none; padding:0; margin:8px 0 0; }

@@ -37,7 +37,7 @@ class DB:
             # Migration: ensure `parameter_name` exists and `parameter_id` is nullable
             info = con.execute(f"PRAGMA table_info({table})").fetchall()
             cols = {row[1]: row for row in info}  # name -> row
-            required_cols = {"parameter_name", "byte_indices", "bit_indices", "formula", "endian"}
+            required_cols = {"parameter_name", "byte_indices", "bit_indices", "formula", "endian", "bus_type_id", "can_bus_id", "offset_bits", "length_bits", "dimension_id"}
             missing_required = any(c not in cols for c in required_cols)
             param_id_notnull = bool(cols.get("parameter_id", (None, None, None, 0))[3]) if cols.get("parameter_id") else False
             vehicle_id_notnull = bool(cols.get("vehicle_id", (None, None, None, 0))[3]) if cols.get("vehicle_id") else False
@@ -56,6 +56,11 @@ class DB:
                         can_id TEXT NOT NULL,
                         formula TEXT,
                         endian TEXT,
+                        bus_type_id INTEGER,
+                        can_bus_id INTEGER,
+                        offset_bits INTEGER,
+                        length_bits INTEGER,
+                        dimension_id INTEGER,
                         notes TEXT,
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP
                     );
@@ -63,7 +68,7 @@ class DB:
                 )
                 # Copy data; parameter_name will be NULL
                 existing_cols = [c for c in [
-                    "id","vehicle_id","parameter_id","parameter_name","byte_indices","bit_indices","can_id","formula","endian","notes","created_at"
+                    "id","vehicle_id","parameter_id","parameter_name","byte_indices","bit_indices","can_id","formula","endian","bus_type_id","can_bus_id","offset_bits","length_bits","dimension_id","notes","created_at"
                 ] if c in cols]
                 col_list = ",".join(existing_cols)
                 con.execute(
@@ -197,14 +202,48 @@ def get_generation_parameters(generation_id: int) -> List[Dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
-def insert_submission(vehicle_id: int, parameter_id: Optional[int], parameter_name: Optional[str], can_id: str, formula: Optional[str], endian: Optional[str], notes: Optional[str], byte_indices: Optional[List[int]] = None, bit_indices: Optional[List[int]] = None) -> int:
+def insert_submission(
+    vehicle_id: Optional[int],
+    parameter_id: Optional[int],
+    parameter_name: Optional[str],
+    can_id: str,
+    formula: Optional[str],
+    endian: Optional[str],
+    notes: Optional[str],
+    byte_indices: Optional[List[int]] = None,
+    bit_indices: Optional[List[int]] = None,
+    bus_type_id: Optional[int] = None,
+    can_bus_id: Optional[int] = None,
+    offset_bits: Optional[int] = None,
+    length_bits: Optional[int] = None,
+    dimension_id: Optional[int] = None,
+) -> int:
     st = TABLES["submissions"]["table"]
     sql = f"""
-        INSERT INTO {st} (vehicle_id, parameter_id, parameter_name, can_id, formula, endian, notes, byte_indices, bit_indices)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO {st} (vehicle_id, parameter_id, parameter_name, can_id, formula, endian, notes, byte_indices, bit_indices, bus_type_id, can_bus_id, offset_bits, length_bits, dimension_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     import json
     return db.execute(sql, (
         vehicle_id, parameter_id, parameter_name, can_id, formula, endian, notes,
         json.dumps(byte_indices or []), json.dumps(bit_indices or []),
+        bus_type_id, can_bus_id, offset_bits, length_bits, dimension_id,
     ))
+
+
+def get_bus_types() -> List[Dict[str, Any]]:
+    rows = db.query("SELECT idBus AS id, busName AS name FROM busType ORDER BY id")
+    return [dict(r) for r in rows]
+
+
+def get_can_buses() -> List[Dict[str, Any]]:
+    rows = db.query("SELECT canBusId AS id, canBusName AS name, canBaudrate AS baudrate FROM canBuses ORDER BY canBaudrate")
+    return [dict(r) for r in rows]
+
+
+def get_dimensions() -> List[Dict[str, Any]]:
+    # Not all DBs have a 'priority' column; order by name safely
+    rows = db.query(
+        "SELECT id, COALESCE(dimension_ru, dimension_en) AS name FROM dimensions ORDER BY name"
+    )
+    return [dict(r) for r in rows]

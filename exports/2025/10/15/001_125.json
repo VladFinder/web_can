@@ -1,0 +1,47 @@
+{
+  "db_submission_ids": [
+    4
+  ],
+  "count": 1,
+  "timestamp": "2025-10-15T19:54:59.912302",
+  "make": "Lada",
+  "model": "Kalina",
+  "generation_label": "2012 - 2021 v2.0",
+  "generation_id": 291,
+  "items": [
+    {
+      "parameter_id": 19,
+      "can_id": "125",
+      "formula": null,
+      "endian": "little",
+      "bus_type_id": "1",
+      "can_bus_id": "2",
+      "offset_bits": 16,
+      "length_bits": 16,
+      "dimension_id": null,
+      "notes": null,
+      "selected_bits": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "selected_bytes": [
+        2,
+        3
+      ]
+    }
+  ]
+}

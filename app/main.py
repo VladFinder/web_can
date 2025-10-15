@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .db import db, get_makes, get_models, get_parameters, get_vehicles, insert_submission, get_generations, parameter_exists_in_generation, get_parameter_by_name, get_generation_parameters
+from .db import db, get_makes, get_models, get_parameters, get_vehicles, insert_submission, get_generations, parameter_exists_in_generation, get_parameter_by_name, get_generation_parameters, get_bus_types, get_can_buses, get_dimensions
 from .config import DB_PATH, EXPORT_DIR
 import os
 import re
@@ -82,6 +82,24 @@ def api_generation_parameters(generation_id: int = Query(...)) -> JSONResponse:
     return JSONResponse(get_generation_parameters(gid))
 
 
+@app.get("/api/bus-types")
+def api_bus_types() -> JSONResponse:
+    require_db()
+    return JSONResponse(get_bus_types())
+
+
+@app.get("/api/can-buses")
+def api_can_buses() -> JSONResponse:
+    require_db()
+    return JSONResponse(get_can_buses())
+
+
+@app.get("/api/dimensions")
+def api_dimensions() -> JSONResponse:
+    require_db()
+    return JSONResponse(get_dimensions())
+
+
 @app.get("/api/parameters")
 def api_parameters(query: Optional[str] = None, limit: int = 200) -> JSONResponse:
     require_db()
@@ -137,6 +155,11 @@ def api_submit(payload: dict) -> JSONResponse:
             str(item.get("notes")).strip() if item.get("notes") not in (None,) else None,
             byte_indices=bytes_sel,
             bit_indices=bits_sel,
+            bus_type_id=int(item.get("bus_type_id")) if item.get("bus_type_id") not in (None, "") else None,
+            can_bus_id=int(item.get("can_bus_id")) if item.get("can_bus_id") not in (None, "") else None,
+            offset_bits=int(item.get("offset_bits")) if item.get("offset_bits") not in (None, "") else None,
+            length_bits=int(item.get("length_bits")) if item.get("length_bits") not in (None, "") else None,
+            dimension_id=int(item.get("dimension_id")) if item.get("dimension_id") not in (None, "") else None,
         )
 
     # Either batch of items or single legacy payload
@@ -203,6 +226,59 @@ def api_submit(payload: dict) -> JSONResponse:
 
         with open(out_path, 'w', encoding='utf-8') as f:
             json.dump(snapshot, f, ensure_ascii=False, indent=2)
+
+        # Also generate SQL script for DB insertion
+        sql_lines: list[str] = []
+        sql_lines.append("BEGIN TRANSACTION;")
+        # If no generation id, generate inserts for manufacturer/model/generation
+        if gen_id is None:
+            make = (payload.get("make") or payload.get("make_custom") or "").replace("'", "''")
+            model = (payload.get("model") or payload.get("model_custom") or "").replace("'", "''")
+            gen_label = (payload.get("generation_label") or payload.get("generation_custom") or "").replace("'", "''")
+            sql_lines.append(f"INSERT INTO manufacturers(manufacturerName) VALUES ('{make}');")
+            sql_lines.append("-- manufacturerId = last_insert_rowid()")
+            sql_lines.append(f"INSERT INTO carsModels(carModelName, manufacturerId) VALUES ('{model}', last_insert_rowid());")
+            sql_lines.append("-- carModelId = last_insert_rowid()")
+            sql_lines.append(f"INSERT INTO generations(generationName, carModelId, MajorVersion, MinorVersion) VALUES ('{gen_label}', last_insert_rowid(), 0, 0);")
+            sql_lines.append("-- generationId = last_insert_rowid()")
+            sql_lines.append("WITH g(id) AS (SELECT last_insert_rowid()) SELECT * FROM g;")
+        else:
+            sql_lines.append(f"-- Using existing generationId = {gen_id}")
+
+        # Insert parameters into canData (create canParameters if needed)
+        def sql_escape(s: Optional[str]) -> str:
+            return (s or "").replace("'", "''")
+
+        src_items = items if items else [payload]
+        for it in src_items:
+            p_id = it.get("parameter_id")
+            p_name = it.get("parameter_name")
+            if not p_id and p_name:
+                sql_lines.append(f"INSERT INTO canParameters(canParameterName_ru) VALUES ('{sql_escape(p_name)}');")
+                sql_lines.append("-- canParameterId = last_insert_rowid()")
+                p_ref = "last_insert_rowid()"
+            else:
+                p_ref = str(p_id)
+
+            dim_id = it.get("dimension_id")
+            dim_expr = f"(SELECT COALESCE(dimension_ru, dimension_en) FROM dimensions WHERE id={int(dim_id)})" if dim_id else "NULL"
+            can_bus_id = it.get("can_bus_id")
+            bus_type_id = it.get("bus_type_id")
+            cond_off = it.get("offset_bits") if it.get("offset_bits") not in (None, "") else 0
+            cond_len = it.get("length_bits") if it.get("length_bits") not in (None, "") else 0
+            formula = sql_escape(it.get("formula"))
+
+            sql_lines.append(
+                "INSERT INTO canData (pid, pidMask, formula, canBusId, canParameterId, generationId, busType, conditionOffset, conditionLength, dimension) "
+                f"VALUES (X'', X'', '{formula}', {int(can_bus_id) if can_bus_id else 'NULL'}, {p_ref}, "
+                + ("last_insert_rowid()" if gen_id is None else str(gen_id))
+                + f", {int(bus_type_id) if bus_type_id is not None else 'NULL'}, {int(cond_off)}, {int(cond_len)}, {dim_expr});"
+            )
+
+        sql_lines.append("COMMIT;")
+        sql_path = out_path[:-5] + "_insert.sql"
+        with open(sql_path, 'w', encoding='utf-8') as sf:
+            sf.write("\n".join(sql_lines))
     except Exception as e:
         return JSONResponse({
             "saved": len(saved_ids),

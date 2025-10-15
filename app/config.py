@@ -59,6 +59,11 @@ def ensure_submission_table_sql(table_name: str) -> str:
         can_id TEXT NOT NULL,
         formula TEXT,
         endian TEXT,
+        bus_type_id INTEGER,
+        can_bus_id INTEGER,
+        offset_bits INTEGER,
+        length_bits INTEGER,
+        dimension_id INTEGER,
         notes TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
