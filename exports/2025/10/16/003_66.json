@@ -1,0 +1,48 @@
+{
+  "db_submission_ids": [
+    8
+  ],
+  "count": 1,
+  "timestamp": "2025-10-16T11:58:45.260562",
+  "make": "Lada",
+  "model": "Largus",
+  "generation_label": "2021 v2.1",
+  "generation_id": 54,
+  "items": [
+    {
+      "parameter_id": 254,
+      "can_id": "66",
+      "formula": null,
+      "endian": "little",
+      "is29bit": false,
+      "bus_type_id": "1",
+      "can_bus_id": "12",
+      "offset_bits": 0,
+      "length_bits": 16,
+      "dimension_id": "6",
+      "notes": null,
+      "selected_bits": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "selected_bytes": [
+        0,
+        1
+      ]
+    }
+  ]
+}

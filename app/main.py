@@ -268,22 +268,37 @@ def api_submit(payload: dict) -> JSONResponse:
             # Off/len should be NULL per requirement
             formula = sql_escape(it.get("formula"))
             # PID and mask
-            def parse_can_id(s: str) -> int:
-                ss = (s or "").strip()
-                if ss.lower().startswith("0x"): return int(ss, 16)
-                return int(ss or 0)
-            cid = parse_can_id(it.get("can_id", "0"))
+            # pid — строкой из 4 цифр (с лидирующими нулями), без перевода в hex
+            def fmt_pid(s: str) -> str:
+                ss = ''.join(ch for ch in (s or '') if ch.isalnum())
+                # Если строка вида 0x...., берём числовую часть как int, но возвращаем десятичную строку
+                try:
+                    if ss.lower().startswith('0x'):
+                        val = int(ss, 16)
+                    else:
+                        val = int(ss or '0')
+                except Exception:
+                    val = 0
+                return f"{val:04d}"
+            pid_text = fmt_pid(it.get("can_id", "0"))
+            pid_blob = f"X'{pid_text}'"
             is29 = str(it.get("is29bit")).lower() in ("1","true","yes","on")
-            pid_mask = 0x1FFFFFFF if is29 else 0x7FF
-            def to_blob_hex(n: int, size: int = 4) -> str:
-                h = n.to_bytes(size, 'big').hex().upper()
-                return f"X'{h}'"
-            pid_hex = to_blob_hex(cid, 4)
-            mask_hex = to_blob_hex(pid_mask, 4)
+            # payload mask: 8 байт, по выбранным байтам FF, иначе 00
+            sel_bits = it.get("selected_bits") or []
+            sel_bytes = set((b // 8) for b in sel_bits)
+            if not sel_bytes and (it.get("offset_bits") not in (None, "") and it.get("length_bits") not in (None, "")):
+                try:
+                    off = int(it.get("offset_bits")); ln = int(it.get("length_bits"));
+                    for idx in range(off, min(64, off+ln)):
+                        sel_bytes.add(idx // 8)
+                except Exception:
+                    pass
+            mask_bytes = ''.join('FF' if i in sel_bytes else '00' for i in range(8))
+            mask_blob = f"X'{mask_bytes}'"
 
             sql_lines.append(
-                "INSERT INTO canData (pid, pidMask, is29Bit, formula, canBusId, canParameterId, generationId, busType, deprecated, conditionOffset, conditionLength, dimension) "
-                f"VALUES ({pid_hex}, {mask_hex}, {1 if is29 else 0}, '{formula}', {int(can_bus_id) if can_bus_id else 'NULL'}, {p_ref}, "
+                "INSERT INTO canData (pid, pidMask, is29Bit, formula, canBusId, canParameterId, generationId, busType, deprecated, conditionOffset, conditionLength, dimension)\n"
+                f"VALUES ({pid_blob}, {mask_blob}, {1 if is29 else 0}, '{formula}', {int(can_bus_id) if can_bus_id else 'NULL'}, {p_ref}, "
                 + ("last_insert_rowid()" if gen_id is None else str(gen_id))
                 + f", {int(bus_type_id) if bus_type_id is not None else 'NULL'}, 0, NULL, NULL, {dim_expr});"
             )

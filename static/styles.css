@@ -33,10 +33,13 @@ pre{ background:var(--panel); padding:12px; border-radius:6px; border:1px solid 
 /* Params list */
 .params-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .param-item{ border:1px solid #222633; border-radius:8px; padding:12px; margin:12px 0; background:var(--panel); }
-.param-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
+.param-grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; align-items:start; }
 .param-actions{ display:flex; justify-content:flex-end; }
 .param-title{ font-weight:700; color:#cbd3e3; margin:0 0 8px; }
-.param-grid.three{ grid-template-columns: repeat(3, 1fr); }
+.param-grid.three{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+.param-item .field{ display:flex; flex-direction:column; gap:6px; }
+@media (max-width: 1024px){ .param-grid.three{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 640px){ .param-grid, .param-grid.three{ grid-template-columns: 1fr; } }
 .params-layout{ display:block; }
 .sidebar{ display:none; }
 .list{ list-style:none; padding:0; margin:8px 0 0; }
