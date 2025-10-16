@@ -181,6 +181,16 @@ def api_submit(payload: dict) -> JSONResponse:
             except Exception:
                 gen_id = None
 
+        is_custom_vehicle = bool(
+            (payload.get("make") in (None, "") and payload.get("make_custom")) or
+            (payload.get("model") in (None, "") and payload.get("model_custom")) or
+            payload.get("generation_custom")
+        )
+
+        # Если марка/модель выбраны из БД, но поколение не выбрано — не создаём дубликаты, просим выбрать поколение
+        if gen_id is None and not is_custom_vehicle:
+            raise HTTPException(status_code=400, detail="Не выбрано поколение. Выберите поколение из списка, либо введите своё (кастомное), чтобы создать новую запись.")
+
         if items and isinstance(items, list):
             for it in items:
                 saved_ids.append(process_one(it, gen_id))
@@ -239,7 +249,7 @@ def api_submit(payload: dict) -> JSONResponse:
         sql_lines: list[str] = []
         sql_lines.append("BEGIN TRANSACTION;")
         # If no generation id, generate inserts for manufacturer/model/generation
-        if gen_id is None:
+        if gen_id is None and is_custom_vehicle:
             make = (payload.get("make") or payload.get("make_custom") or "").replace("'", "''")
             model = (payload.get("model") or payload.get("model_custom") or "").replace("'", "''")
             gen_label = (payload.get("generation_label") or payload.get("generation_custom") or "").replace("'", "''")
@@ -250,7 +260,7 @@ def api_submit(payload: dict) -> JSONResponse:
             sql_lines.append(f"INSERT INTO generations(generationName, carModelId, MajorVersion, MinorVersion) VALUES ('{gen_label}', last_insert_rowid(), 0, 0);")
             sql_lines.append("-- generationId = last_insert_rowid()")
             sql_lines.append("WITH g(id) AS (SELECT last_insert_rowid()) SELECT * FROM g;")
-        else:
+        elif gen_id is not None:
             sql_lines.append(f"-- Using existing generationId = {gen_id}")
 
         # Insert parameters into canData (create canParameters if needed)
