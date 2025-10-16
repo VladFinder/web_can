@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .db import db, get_makes, get_models, get_parameters, get_vehicles, insert_submission, get_generations, parameter_exists_in_generation, get_parameter_by_name, get_generation_parameters, get_bus_types, get_can_buses, get_dimensions
+from .db import db, get_makes, get_models, get_parameters, get_vehicles, insert_submission, get_generations, parameter_exists_in_generation, get_parameter_by_name, ensure_parameter, get_generation_parameters, get_bus_types, get_can_buses, get_dimensions
 from .config import DB_PATH, EXPORT_DIR
 import os
 import re
@@ -126,9 +126,16 @@ def api_submit(payload: dict) -> JSONResponse:
         if param_id is None and not param_name:
             raise HTTPException(status_code=400, detail="Нужно выбрать параметр из списка или указать название вручную.")
         if param_id is None and param_name:
-            resolved_id = get_parameter_by_name(param_name)
-            if resolved_id is not None:
-                param_id = resolved_id
+            # Create parameter in DB if it does not exist yet
+            try:
+                param_id = ensure_parameter(param_name)
+                # Having an id, no need to store name separately in submissions
+                param_name = None
+            except Exception as ex:
+                # Fallback: try resolve only
+                resolved_id = get_parameter_by_name(param_name)
+                if resolved_id is not None:
+                    param_id = resolved_id
         # Duplicate check only if есть generation и param_id
         if gen_id_opt is not None and param_id is not None and parameter_exists_in_generation(gen_id_opt, param_id):
             raise HTTPException(status_code=409, detail="Этот параметр уже присутствует для выбранного поколения в БД (canData).")

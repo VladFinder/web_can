@@ -181,6 +181,17 @@ def get_parameter_by_name(name: str) -> Optional[int]:
     return int(rows[0]["id"]) if rows else None
 
 
+def ensure_parameter(name: str) -> int:
+    """Return parameter id by name, creating it if absent."""
+    existing = get_parameter_by_name(name)
+    if existing is not None:
+        return existing
+    pt = TABLES["parameters"]
+    # Insert only the name column; other columns default/null
+    insert_sql = f"INSERT INTO {pt['table']} ({pt['name']}) VALUES (?)"
+    return db.execute(insert_sql, (name,))
+
+
 def parameter_exists_in_generation(generation_id: int, parameter_id: int) -> bool:
     # canData(generationId, canParameterId, ...)
     sql = (
