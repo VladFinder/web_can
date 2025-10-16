@@ -160,6 +160,7 @@ def api_submit(payload: dict) -> JSONResponse:
             offset_bits=int(item.get("offset_bits")) if item.get("offset_bits") not in (None, "") else None,
             length_bits=int(item.get("length_bits")) if item.get("length_bits") not in (None, "") else None,
             dimension_id=int(item.get("dimension_id")) if item.get("dimension_id") not in (None, "") else None,
+            is29bit=1 if str(item.get("is29bit")).lower() in ("1","true","yes","on") else 0,
         )
 
     # Either batch of items or single legacy payload
@@ -261,18 +262,30 @@ def api_submit(payload: dict) -> JSONResponse:
                 p_ref = str(p_id)
 
             dim_id = it.get("dimension_id")
-            dim_expr = f"(SELECT COALESCE(dimension_ru, dimension_en) FROM dimensions WHERE id={int(dim_id)})" if dim_id else "NULL"
+            dim_expr = str(int(dim_id)) if dim_id not in (None, "") else "NULL"
             can_bus_id = it.get("can_bus_id")
             bus_type_id = it.get("bus_type_id")
-            cond_off = it.get("offset_bits") if it.get("offset_bits") not in (None, "") else 0
-            cond_len = it.get("length_bits") if it.get("length_bits") not in (None, "") else 0
+            # Off/len should be NULL per requirement
             formula = sql_escape(it.get("formula"))
+            # PID and mask
+            def parse_can_id(s: str) -> int:
+                ss = (s or "").strip()
+                if ss.lower().startswith("0x"): return int(ss, 16)
+                return int(ss or 0)
+            cid = parse_can_id(it.get("can_id", "0"))
+            is29 = str(it.get("is29bit")).lower() in ("1","true","yes","on")
+            pid_mask = 0x1FFFFFFF if is29 else 0x7FF
+            def to_blob_hex(n: int, size: int = 4) -> str:
+                h = n.to_bytes(size, 'big').hex().upper()
+                return f"X'{h}'"
+            pid_hex = to_blob_hex(cid, 4)
+            mask_hex = to_blob_hex(pid_mask, 4)
 
             sql_lines.append(
-                "INSERT INTO canData (pid, pidMask, formula, canBusId, canParameterId, generationId, busType, conditionOffset, conditionLength, dimension) "
-                f"VALUES (X'', X'', '{formula}', {int(can_bus_id) if can_bus_id else 'NULL'}, {p_ref}, "
+                "INSERT INTO canData (pid, pidMask, is29Bit, formula, canBusId, canParameterId, generationId, busType, deprecated, conditionOffset, conditionLength, dimension) "
+                f"VALUES ({pid_hex}, {mask_hex}, {1 if is29 else 0}, '{formula}', {int(can_bus_id) if can_bus_id else 'NULL'}, {p_ref}, "
                 + ("last_insert_rowid()" if gen_id is None else str(gen_id))
-                + f", {int(bus_type_id) if bus_type_id is not None else 'NULL'}, {int(cond_off)}, {int(cond_len)}, {dim_expr});"
+                + f", {int(bus_type_id) if bus_type_id is not None else 'NULL'}, 0, NULL, NULL, {dim_expr});"
             )
 
         sql_lines.append("COMMIT;")

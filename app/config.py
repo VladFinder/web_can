@@ -64,6 +64,7 @@ def ensure_submission_table_sql(table_name: str) -> str:
         offset_bits INTEGER,
         length_bits INTEGER,
         dimension_id INTEGER,
+        is29bit INTEGER,
         notes TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );

@@ -37,7 +37,7 @@ class DB:
             # Migration: ensure `parameter_name` exists and `parameter_id` is nullable
             info = con.execute(f"PRAGMA table_info({table})").fetchall()
             cols = {row[1]: row for row in info}  # name -> row
-            required_cols = {"parameter_name", "byte_indices", "bit_indices", "formula", "endian", "bus_type_id", "can_bus_id", "offset_bits", "length_bits", "dimension_id"}
+            required_cols = {"parameter_name", "byte_indices", "bit_indices", "formula", "endian", "bus_type_id", "can_bus_id", "offset_bits", "length_bits", "dimension_id", "is29bit"}
             missing_required = any(c not in cols for c in required_cols)
             param_id_notnull = bool(cols.get("parameter_id", (None, None, None, 0))[3]) if cols.get("parameter_id") else False
             vehicle_id_notnull = bool(cols.get("vehicle_id", (None, None, None, 0))[3]) if cols.get("vehicle_id") else False
@@ -61,6 +61,7 @@ class DB:
                         offset_bits INTEGER,
                         length_bits INTEGER,
                         dimension_id INTEGER,
+                        is29bit INTEGER,
                         notes TEXT,
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP
                     );
@@ -68,7 +69,7 @@ class DB:
                 )
                 # Copy data; parameter_name will be NULL
                 existing_cols = [c for c in [
-                    "id","vehicle_id","parameter_id","parameter_name","byte_indices","bit_indices","can_id","formula","endian","bus_type_id","can_bus_id","offset_bits","length_bits","dimension_id","notes","created_at"
+                    "id","vehicle_id","parameter_id","parameter_name","byte_indices","bit_indices","can_id","formula","endian","bus_type_id","can_bus_id","offset_bits","length_bits","dimension_id","is29bit","notes","created_at"
                 ] if c in cols]
                 col_list = ",".join(existing_cols)
                 con.execute(
@@ -217,17 +218,18 @@ def insert_submission(
     offset_bits: Optional[int] = None,
     length_bits: Optional[int] = None,
     dimension_id: Optional[int] = None,
+    is29bit: Optional[int] = None,
 ) -> int:
     st = TABLES["submissions"]["table"]
     sql = f"""
-        INSERT INTO {st} (vehicle_id, parameter_id, parameter_name, can_id, formula, endian, notes, byte_indices, bit_indices, bus_type_id, can_bus_id, offset_bits, length_bits, dimension_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO {st} (vehicle_id, parameter_id, parameter_name, can_id, formula, endian, notes, byte_indices, bit_indices, bus_type_id, can_bus_id, offset_bits, length_bits, dimension_id, is29bit)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     import json
     return db.execute(sql, (
         vehicle_id, parameter_id, parameter_name, can_id, formula, endian, notes,
         json.dumps(byte_indices or []), json.dumps(bit_indices or []),
-        bus_type_id, can_bus_id, offset_bits, length_bits, dimension_id,
+        bus_type_id, can_bus_id, offset_bits, length_bits, dimension_id, is29bit,
     ))
 
 
